@@ -14,35 +14,38 @@
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-5">
-        <a class="navbar-brand px-5" href="{% url 'dashboard' %}">Payroll Management</a>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <a class="navbar-brand px-3" href="{% url 'dashboard' %}">Payroll Management</a>
 
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <div class="navbar-collapse" id="navbarSupportedContent">
+        <div class="collapse navbar-collapse d-flex justify-content-between w-100" id="navbarSupportedContent">
             {% if user.is_authenticated %}
             <ul class="navbar-nav">
                 {% if user.is_staff %}
-                <li class="nav-item nav-item active">
+                <li class="nav-item">
                     <a href="{% url 'select_employee' %}" class="nav-link"><i class="fa fa-user-check"></i> Select Employee</a>
                 </li>
-                <li class="nav-item nav-item">
+                <li class="nav-item">
                     <a href="{% url 'register_employee' %}" class="nav-link"><i class="fa fa-user-plus"></i> Register Employee</a>
                 </li>
                 {% endif %}
             </ul>
+
             <!-- Move Logout button to the right -->
-            <div class="ml-auto">
+            <div class="ms-auto px-3">
                 <a href="{% url 'logout' %}" class="btn btn-secondary"><i class="fa fa-sign-out-alt"></i> Logout</a>
             </div>
             {% endif %}
         </div>
     </nav>
     
-    <div class="container mt-4">
+    <div class="container-fluid mt-4">
         {% block content %}{% endblock %}
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
