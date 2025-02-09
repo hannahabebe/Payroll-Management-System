@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h4>Payroll Calculation for <strong> {{ employee.name }} </strong> </h4>
+
+<div style="max-height: 400px; overflow-y: auto;">
+    <table class="table table-bordered text-center">
+        <thead class="table-dark">
+            <tr>
+                <th colspan="4">OVERTIME</th>
+                <th colspan="5">ABSENCE & DEDUCTION</th>
+            </tr>
+        </thead>
+        <thead>
+            <tr class="table-secondary text-light">
+                <th>Work Days</th>
+                <th>Sunday</th>
+                <th>Holiday</th>
+                <th class="text-success">Total Days</th>
+                <th>Justified</th>
+                <th>Unjustified</th>
+                <th>Tardiness L</th>
+                <th>Tardiness VL</th>
+                <th class="text-danger">Total Days</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ payroll.work_days }}</td>
+                <td>{{ payroll.sunday }}</td>
+                <td>{{ payroll.holiday }}</td>
+                <td class="fw-bold table-secondary text-success">{{ calculated_data.total_overtime_days }}</td>
+                <td>{{ payroll.justified }}</td>
+                <td>{{ payroll.unjustified }}</td>
+                <td>{{ payroll.tardiness_l }}</td>
+                <td>{{ payroll.tardiness_vl }}</td>
+                <td class="fw-bold table-secondary text-danger">{{ calculated_data.total_absence_days }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- Other Payroll Details -->
+<div class="d-flex justify-content-between">
+    <!-- Left Table -->
+    <table class="table table-bordered w-50">
+        <tbody>
+            <tr>
+                <td><strong>Working Day Adjustment</strong></td>
+                <td>{{ payroll.working_day_adjustment }}</td>
+            </tr>
+            <tr>
+                <td><strong>Misconduct</strong></td>
+                <td>{{ kpi.misconduct }}</td>
+            </tr>
+            <!-- Call Agent KPI-->
+            {% if employee.position == "Call Agent" %}
+            {% if calculated_data.call_flow %}
+            <tr>
+                <td><strong>Call Flow</strong></td>
+                <td>{{ calculated_data.call_flow }}</td>
+            </tr>
+            {% endif %}
+            {% if 'aht' in calculated_data %}
+            <tr>
+                <td><strong>Aht</strong></td>
+                <td>{{ calculated_data.aht }}</td>
+            </tr>
+            {% endif %}
+            {% if 'pickup' in calculated_data %}
+            <tr>
+                <td><strong>Pickup</strong></td>
+                <td>{{ calculated_data.pickup }}</td>
+            </tr>
+            {% endif %}
+            {% if calculated_data.improvement %}
+            <tr>
+                <td><strong>Improvement</strong></td>
+                <td>{{ calculated_data.improvement }}</td>
+            </tr>
+            {% endif %}
+        </tbody>
+        {% endif %}
+    </table>
+
+    <!-- Right Table -->
+    <table class="table table-bordered w-50">
+        <tbody>
+            <tr>
+                <td><strong>Daily Pay</strong></td>
+                <td class="text-end">{{ calculated_data.daily_pay }}</td>
+            </tr>
+            <tr>
+                <td><strong>Scheduled Working Day</strong></td>
+                <td class="text-end">{{ calculated_data.scheduled_working_day }}</td>
+            </tr>
+            <tr>
+                <td><strong>Paid Salary</strong></td>
+                <td class="text-end">{{ calculated_data.paid_salary }}</td>
+            </tr>
+            <tr>
+                <td><strong>Non-Taxable Transport Allowance</strong></td>
+                <td class="text-end">{{ calculated_data.non_taxable_transport_allowance }}</td>
+            </tr>
+            <tr>
+                <td><strong>Overtime Payment</strong></td>
+                <td class="text-end">{{ calculated_data.overtime_payment }}</td>
+            </tr>
+            <tr>
+                <td><strong>Deduction</strong></td>
+                <td class="text-end">{{ calculated_data.deduction }}</td>
+            </tr>
+            <tr>
+                <td><strong>Attendance & Punctuality</strong></td>
+                <td class="text-end">{{ calculated_data.attendance_bonus }}</td>
+            </tr>
+            <tr>
+                <td><strong>Bonus</strong></td>
+                <td class="text-end">{{ calculated_data.bonus }}</td>
+            </tr>
+            <tr>
+                <td><strong>Gross Income</strong></td>
+                <td class="text-end">{{ calculated_data.gross_income }}</td>
+            </tr>
+            <tr>
+                <td><strong>Gross Taxable Income</strong></td>
+                <td class="text-end">{{ calculated_data.gross_taxable_income }}</td>
+            </tr>
+            <tr>
+                <td><strong>Income Tax</strong></td>
+                <td class="text-end">{{ calculated_data.income_tax }}</td>
+            </tr>
+            <tr>
+                <td><strong>Employee Pension Contribution (7%)</strong></td>
+                <td class="text-end">{{ calculated_data.employee_pension }}</td>
+            </tr>
+            <tr>
+                <td><strong>Employer Pension Contribution (11%)</strong></td>
+                <td class="text-end">{{ calculated_data.employer_pension }}</td>
+            </tr>
+            <tr>
+                <td><strong>Total Pension</strong></td>
+                <td class="text-end">{{ calculated_data.total_pension }}</td>
+            </tr>
+            <tr>
+                <td><strong>Total Deduction</strong></td>
+                <td class="text-end">{{ calculated_data.total_deduction }}</td>
+            </tr>
+            <tr>
+                <td class="table-secondary"><strong>Net Salary</strong></td>
+                <td class="fw-bold text-success text-end table-secondary">{{ calculated_data.net_salary }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+
+
+<a href="/" class="btn btn-secondary"><i class="fa fa-arrow-left"></i> Back</a>
+{% endblock %}

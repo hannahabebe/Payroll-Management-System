@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% if user.is_staff %}
+<h4>Select an Employee</h4>
+<table class="table table-bordered">
+    <thead class="table-dark">
+        <tr>
+            <th>Name</th>
+            <th>Position</th>
+            <th>TIN Number</th>
+            <th>Employment Date</th>
+            <th>End of Employment</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for employee in employees %}
+        <tr>
+            <td>{{ employee.name }}</td>
+            <td>{{ employee.position }}</td>
+            <td>{{ employee.tin_number }}</td>
+            <td>{{ employee.employment_date }}</td>
+            <td>{{ employee.separation_date|default:"--/--/----" }}</td>
+            <td><a href="{% url 'payroll_form' employee.id %}" class="btn btn-secondary"><i class="fa fa-calculator"></i> Process Payroll</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>    
+</table>
+<a href="{% url 'all_payroll' %}" class="btn btn-secondary mt-3">
+    <i class="fa fa-file-invoice-dollar"></i> Process Payroll for All
+</a>
+{% else %}
+<p class="text-danger">Access denied. Only admins can view this page.</p>
+{% endif %}
+{% endblock %}

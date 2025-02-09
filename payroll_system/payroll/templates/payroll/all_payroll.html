@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h4 class="text-center fw-bold">R H A SOLUTION PLC</h4>
+<h5 class="text-center">Payroll for the month of {{ current_month }} - {{ current_year }}</h5>
+
+<div style="max-height: 500px; overflow-y: auto;">
+    <table class="table table-bordered text-center">
+        <thead class="table-dark">
+            <tr>
+                <th>S/N</th>
+                <th>Name</th>
+                <th>Position</th>
+                <th>TIN Number</th>
+                <th>Employment Date</th>
+                <th>Basic Salary</th>
+                <th>Daily Pay</th>
+                <th>Scheduled Working Days</th>
+                <th colspan="4">Overtime</th>
+                <th colspan="5">Absence & Deduction Adjustments</th>
+                <th>Paid Salary</th>
+                <th>Non-Taxable Transport Allowance</th>
+                <th>Overtime Payment</th>
+                <th>Deduction</th>
+                <th>Call Flow</th>
+                <th>AHT</th>
+                <th>Pickup</th>
+                <th>Attendance</th>
+                <th>Improvement</th>
+                <th>Misconduct</th>
+                <th>Bonus</th>
+                <th>Gross Income</th>
+                <th>Gross Taxable Income</th>
+                <th>Income Tax</th>
+                <th>Employee Pension (7%)</th>
+                <th>Employer Pension (11%)</th>
+                <th>Total Pension</th>
+                <th>Total Deduction</th>
+                <th class="text-success">Net Salary</th>
+            </tr>
+            <tr class="table-secondary">
+                <th colspan="8"></th>
+                <th>Work Days</th>
+                <th>Sunday</th>
+                <th>Holiday</th>
+                <th>Total Days</th>
+                <th>Justified</th>
+                <th>Unjustified</th>
+                <th>Tardiness L</th>
+                <th>Tardiness VL</th>
+                <th>Total Days</th>
+                <th colspan="24"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for data in payroll_data %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ data.employee.name }}</td>
+                <td>{{ data.employee.position }}</td>
+                <td>{{ data.employee.tin_number }}</td>
+                <td>{{ data.employee.employment_date }}</td>
+                <td>{{ data.employee.basic_salary }}</td>
+                <td>{{ data.calculated_data.daily_pay|default:"-" }}</td>
+                <td>{{ data.calculated_data.scheduled_working_day|default:"-" }}</td>
+                <td>{{ data.payroll.work_days|default:"-" }}</td>
+                <td>{{ data.payroll.sunday|default:"-" }}</td>
+                <td>{{ data.payroll.holiday|default:"-" }}</td>
+                <td>{{ data.calculated_data.total_overtime_days|default:"-" }}</td>
+                <td>{{ data.payroll.justified|default:"-" }}</td>
+                <td>{{ data.payroll.unjustified|default:"-" }}</td>
+                <td>{{ data.payroll.tardiness_l|default:"-" }}</td>
+                <td>{{ data.payroll.tardiness_vl|default:"-" }}</td>
+                <td>{{ data.calculated_data.total_absence_days|default:"-" }}</td>
+                <td>{{ data.calculated_data.paid_salary|default:"-" }}</td>
+                <td>{{ data.calculated_data.non_taxable_transport_allowance|default:"-" }}</td>
+                <td>{{ data.calculated_data.overtime_payment|default:"-" }}</td>
+                <td>{{ data.calculated_data.deduction|default:"-" }}</td>
+                <td>{{ data.calculated_data.call_flow|default:"-" }}</td>
+                <td>{{ data.calculated_data.aht|default:"-" }}</td>
+                <td>{{ data.calculated_data.pickup|default:"-" }}</td>
+                <td>{{ data.calculated_data.attendance_bonus|default:"-" }}</td>
+                <td>{{ data.calculated_data.improvement|default:"-" }}</td>
+                <td>{{ data.kpi.misconduct|default:"-" }}</td>
+                <td>{{ data.calculated_data.bonus|default:"-" }}</td>
+                <td>{{ data.calculated_data.gross_income|default:"-" }}</td>
+                <td>{{ data.calculated_data.gross_taxable_income|default:"-" }}</td>
+                <td>{{ data.calculated_data.income_tax|default:"-" }}</td>
+                <td>{{ data.calculated_data.employee_pension|default:"-" }}</td>
+                <td>{{ data.calculated_data.employer_pension|default:"-" }}</td>
+                <td>{{ data.calculated_data.total_pension|default:"-" }}</td>
+                <td>{{ data.calculated_data.total_deduction|default:"-" }}</td>
+                <td class="fw-bold text-success">{{ data.calculated_data.net_salary|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<a href="/" class="btn btn-secondary"><i class="fa fa-arrow-left"></i> Back</a>
+{% endblock %}
