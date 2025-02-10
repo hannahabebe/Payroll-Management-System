@@ -9,6 +9,11 @@ from django.utils.timezone import now
 import pandas as pd
 from reportlab.pdfgen import canvas
 import io
+from io import BytesIO
+# PDF
+from reportlab.lib.pagesizes import landscape, A4
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 
 def user_login(request):
     if request.method == "POST":
@@ -71,6 +76,7 @@ def select_employee(request):
     employees = Employee.objects.all()
     return render(request, 'payroll/select_employee.html', {'employees': employees})
 
+
 def payroll_form(request, employee_id):
     employee = get_object_or_404(Employee, id=employee_id)
 
@@ -105,7 +111,7 @@ def payroll_form(request, employee_id):
         'kpi_form': kpi_form,
     })
 
-
+# To calculate payroll for an employee
 def calculate_payroll(payroll, kpi):
     daily_pay = Decimal(payroll.employee.basic_salary) / Decimal(30)
     scheduled_working_day = payroll.scheduled_working_days_input - payroll.unjustified + payroll.working_day_adjustment
@@ -197,7 +203,49 @@ def calculate_payroll(payroll, kpi):
         **call_agent_kpi,  # Merges Call Agent KPI fields if applicable
 }
 
+# Export the payroll generated for an employee to an excel file
+def export_employee_payroll_excel(request, employee_id):
+    employee = get_object_or_404(Employee, id=employee_id)
+    payroll = Payroll.objects.filter(employee=employee).order_by('-payroll_date').first()
+    kpi = KPI.objects.filter(employee=employee).first()
+    calculated_data = calculate_payroll(payroll, kpi) if payroll and kpi else {}
 
+    data = [
+        ["Name", employee.name],
+        ["Position", employee.position],
+        ["TIN Number", employee.tin_number],
+        ["Employment Date", employee.employment_date],
+        ["Basic Salary", employee.basic_salary],
+        ["Net Salary", calculated_data.get('net_salary', '-')]
+    ]
+
+    df = pd.DataFrame(data)
+    response = HttpResponse(content_type='application/vnd.ms-excel')
+    response['Content-Disposition'] = f'attachment; filename="{employee.name}_payroll.xlsx"'
+    df.to_excel(response, index=False, header=False)
+    return response
+
+# Export the payroll generated for an employee to a pdf file
+def export_employee_payroll_pdf(request, employee_id):
+    buffer = io.BytesIO()
+    pdf = canvas.Canvas(buffer)
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    payroll = Payroll.objects.filter(employee=employee).order_by('-payroll_date').first()
+    kpi = KPI.objects.filter(employee=employee).first()
+    calculated_data = calculate_payroll(payroll, kpi) if payroll and kpi else {}
+
+    pdf.drawString(100, 750, f"Payroll Report for {employee.name}")
+    pdf.drawString(100, 730, f"Position: {employee.position}")
+    pdf.drawString(100, 710, f"Net Salary: {calculated_data.get('net_salary', '-')}")
+
+    pdf.showPage()
+    pdf.save()
+    buffer.seek(0)
+    return HttpResponse(buffer, content_type='application/pdf')
+
+
+# To generate payroll for all employees
 def all_payroll(request):
     employees = Employee.objects.all()
     payroll_data = []
@@ -229,11 +277,17 @@ def all_payroll(request):
         'current_year': current_year,
     })
 
-
+# Export the payroll generated for all to an excel file
 def export_all_payroll_excel(request):
     employees = Employee.objects.all()
     payroll_data = []
 
+    # Get current month and year
+    current_month = now().strftime("%B")
+    current_year = now().year
+    filename = f"RHA Payroll for the month of {current_month} - {current_year}.xlsx"
+
+    # Prepare payroll data for export
     for employee in employees:
         payroll = Payroll.objects.filter(employee=employee).order_by('-payroll_date').first()
         kpi = KPI.objects.filter(employee=employee).first()
@@ -266,16 +320,32 @@ def export_all_payroll_excel(request):
         "Total Deduction", "Net Salary"
     ]
 
+    # Create a Pandas Excel writer using BytesIO
+    output = BytesIO()
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+
+    # Create DataFrame and write it to the Excel file
     df = pd.DataFrame(payroll_data, columns=column_names)
-    response = HttpResponse(content_type='application/vnd.ms-excel')
-    response['Content-Disposition'] = 'attachment; filename="all_payroll.xlsx"'
-    df.to_excel(response, index=False)
+    df.to_excel(writer, index=False, sheet_name="Payroll Data", startrow=4)  # Start at row 5 for the heading
+
+    # Get the workbook and worksheet objects
+    workbook = writer.book
+    worksheet = writer.sheets["Payroll Data"]
+
+    # Merge cells for heading
+    merge_format = workbook.add_format({'align': 'center', 'bold': True, 'font_size': 14})
+    worksheet.merge_range("A1:AI1", "R H A SOLUTION PLC", merge_format)
+    worksheet.merge_range("A2:AI2", f"Payroll for the month of {current_month} - {current_year}", merge_format)
+
+    # Save the Excel file and return response
+    writer.close()
+    output.seek(0)
+    response = HttpResponse(output, content_type='application/vnd.ms-excel')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
     return response
 
-from reportlab.lib.pagesizes import landscape, A4
-from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
-
+# Export the payroll generated for all to a pdf file
 def export_all_payroll_pdf(request):
     buffer = io.BytesIO()
     pdf = SimpleDocTemplate(buffer, pagesize=landscape(A4))
@@ -303,44 +373,4 @@ def export_all_payroll_pdf(request):
     pdf.build([table])
     buffer.seek(0)
     return HttpResponse(buffer, content_type='application/pdf')
-
-def export_employee_payroll_excel(request, employee_id):
-    employee = get_object_or_404(Employee, id=employee_id)
-    payroll = Payroll.objects.filter(employee=employee).order_by('-payroll_date').first()
-    kpi = KPI.objects.filter(employee=employee).first()
-    calculated_data = calculate_payroll(payroll, kpi) if payroll and kpi else {}
-
-    data = [
-        ["Name", employee.name],
-        ["Position", employee.position],
-        ["TIN Number", employee.tin_number],
-        ["Employment Date", employee.employment_date],
-        ["Basic Salary", employee.basic_salary],
-        ["Net Salary", calculated_data.get('net_salary', '-')]
-    ]
-
-    df = pd.DataFrame(data)
-    response = HttpResponse(content_type='application/vnd.ms-excel')
-    response['Content-Disposition'] = f'attachment; filename="{employee.name}_payroll.xlsx"'
-    df.to_excel(response, index=False, header=False)
-    return response
-
-def export_employee_payroll_pdf(request, employee_id):
-    buffer = io.BytesIO()
-    pdf = canvas.Canvas(buffer)
-
-    employee = get_object_or_404(Employee, id=employee_id)
-    payroll = Payroll.objects.filter(employee=employee).order_by('-payroll_date').first()
-    kpi = KPI.objects.filter(employee=employee).first()
-    calculated_data = calculate_payroll(payroll, kpi) if payroll and kpi else {}
-
-    pdf.drawString(100, 750, f"Payroll Report for {employee.name}")
-    pdf.drawString(100, 730, f"Position: {employee.position}")
-    pdf.drawString(100, 710, f"Net Salary: {calculated_data.get('net_salary', '-')}")
-
-    pdf.showPage()
-    pdf.save()
-    buffer.seek(0)
-    return HttpResponse(buffer, content_type='application/pdf')
-
 
