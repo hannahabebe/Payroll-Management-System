@@ -230,18 +230,114 @@ def all_payroll(request):
     })
 
 
-def export_excel(request):
+def export_all_payroll_excel(request):
     employees = Employee.objects.all()
-    df = pd.DataFrame(list(employees.values('name', 'position', 'basic_salary')))
+    payroll_data = []
+
+    for employee in employees:
+        payroll = Payroll.objects.filter(employee=employee).order_by('-payroll_date').first()
+        kpi = KPI.objects.filter(employee=employee).first()
+        calculated_data = calculate_payroll(payroll, kpi) if payroll and kpi else {}
+
+        payroll_data.append([
+            employee.name, employee.position, employee.tin_number, employee.employment_date, employee.basic_salary,
+            calculated_data.get('daily_pay', '-'), calculated_data.get('scheduled_working_day', '-'),
+            payroll.work_days if payroll else '-', payroll.sunday if payroll else '-', payroll.holiday if payroll else '-',
+            calculated_data.get('total_overtime_days', '-'), payroll.justified if payroll else '-',
+            payroll.unjustified if payroll else '-', payroll.tardiness_l if payroll else '-', payroll.tardiness_vl if payroll else '-',
+            calculated_data.get('total_absence_days', '-'), calculated_data.get('paid_salary', '-'),
+            calculated_data.get('non_taxable_transport_allowance', '-'), calculated_data.get('overtime_payment', '-'),
+            calculated_data.get('deduction', '-'), calculated_data.get('call_flow', '-'), calculated_data.get('aht', '-'),
+            calculated_data.get('pickup', '-'), calculated_data.get('attendance_bonus', '-'),
+            calculated_data.get('improvement', '-'), kpi.misconduct if kpi else '-',
+            calculated_data.get('bonus', '-'), calculated_data.get('gross_income', '-'),
+            calculated_data.get('gross_taxable_income', '-'), calculated_data.get('income_tax', '-'),
+            calculated_data.get('employee_pension', '-'), calculated_data.get('employer_pension', '-'),
+            calculated_data.get('total_pension', '-'), calculated_data.get('total_deduction', '-'),
+            calculated_data.get('net_salary', '-')
+        ])
+
+    column_names = [
+        "Name", "Position", "TIN Number", "Employment Date", "Basic Salary", "Daily Pay", "Scheduled Working Days",
+        "Work Days", "Sunday", "Holiday", "Total Overtime Days", "Justified", "Unjustified", "Tardiness L", "Tardiness VL",
+        "Total Absence Days", "Paid Salary", "Non-Taxable Transport Allowance", "Overtime Payment", "Deduction",
+        "Call Flow", "AHT", "Pickup", "Attendance", "Improvement", "Misconduct", "Bonus", "Gross Income",
+        "Gross Taxable Income", "Income Tax", "Employee Pension (7%)", "Employer Pension (11%)", "Total Pension",
+        "Total Deduction", "Net Salary"
+    ]
+
+    df = pd.DataFrame(payroll_data, columns=column_names)
     response = HttpResponse(content_type='application/vnd.ms-excel')
-    response['Content-Disposition'] = 'attachment; filename="payroll.xlsx"'
+    response['Content-Disposition'] = 'attachment; filename="all_payroll.xlsx"'
     df.to_excel(response, index=False)
     return response
 
-def export_pdf(request):
+from reportlab.lib.pagesizes import landscape, A4
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+
+def export_all_payroll_pdf(request):
+    buffer = io.BytesIO()
+    pdf = SimpleDocTemplate(buffer, pagesize=landscape(A4))
+    data = [["Name", "Position", "TIN Number", "Employment Date", "Basic Salary", "Net Salary"]]  # Headers
+
+    employees = Employee.objects.all()
+    for employee in employees:
+        payroll = Payroll.objects.filter(employee=employee).order_by('-payroll_date').first()
+        kpi = KPI.objects.filter(employee=employee).first()
+        calculated_data = calculate_payroll(payroll, kpi) if payroll and kpi else {}
+
+        data.append([
+            employee.name, employee.position, employee.tin_number, employee.employment_date, employee.basic_salary,
+            calculated_data.get('net_salary', '-')
+        ])
+
+    table = Table(data)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+    ]))
+
+    pdf.build([table])
+    buffer.seek(0)
+    return HttpResponse(buffer, content_type='application/pdf')
+
+def export_employee_payroll_excel(request, employee_id):
+    employee = get_object_or_404(Employee, id=employee_id)
+    payroll = Payroll.objects.filter(employee=employee).order_by('-payroll_date').first()
+    kpi = KPI.objects.filter(employee=employee).first()
+    calculated_data = calculate_payroll(payroll, kpi) if payroll and kpi else {}
+
+    data = [
+        ["Name", employee.name],
+        ["Position", employee.position],
+        ["TIN Number", employee.tin_number],
+        ["Employment Date", employee.employment_date],
+        ["Basic Salary", employee.basic_salary],
+        ["Net Salary", calculated_data.get('net_salary', '-')]
+    ]
+
+    df = pd.DataFrame(data)
+    response = HttpResponse(content_type='application/vnd.ms-excel')
+    response['Content-Disposition'] = f'attachment; filename="{employee.name}_payroll.xlsx"'
+    df.to_excel(response, index=False, header=False)
+    return response
+
+def export_employee_payroll_pdf(request, employee_id):
     buffer = io.BytesIO()
     pdf = canvas.Canvas(buffer)
-    pdf.drawString(100, 750, "Payroll Report")
+
+    employee = get_object_or_404(Employee, id=employee_id)
+    payroll = Payroll.objects.filter(employee=employee).order_by('-payroll_date').first()
+    kpi = KPI.objects.filter(employee=employee).first()
+    calculated_data = calculate_payroll(payroll, kpi) if payroll and kpi else {}
+
+    pdf.drawString(100, 750, f"Payroll Report for {employee.name}")
+    pdf.drawString(100, 730, f"Position: {employee.position}")
+    pdf.drawString(100, 710, f"Net Salary: {calculated_data.get('net_salary', '-')}")
+
     pdf.showPage()
     pdf.save()
     buffer.seek(0)

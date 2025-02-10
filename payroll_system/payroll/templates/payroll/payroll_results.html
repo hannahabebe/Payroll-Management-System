@@ -154,8 +154,11 @@
         </tbody>
     </table>
 </div>
-
-
-
 <a href="/" class="btn btn-secondary"><i class="fa fa-arrow-left"></i> Back</a>
+<a href="{% url 'export_employee_payroll_excel' employee.id %}" class="btn btn-success">
+    <i class="fa fa-file-excel"></i> Export to Excel
+</a>
+<a href="{% url 'export_employee_payroll_pdf' employee.id %}" class="btn btn-danger">
+    <i class="fa fa-file-pdf"></i> Export to PDF
+</a>
 {% endblock %}
